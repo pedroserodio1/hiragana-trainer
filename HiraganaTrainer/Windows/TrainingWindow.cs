@@ -1,5 +1,6 @@
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface;
 using Dalamud.Interface.FontIdentifier;
 using Dalamud.Interface.ManagedFontAtlas;
 using Dalamud.Interface.Windowing;
@@ -46,6 +47,10 @@ public sealed class TrainingWindow : Window, IDisposable
 
     public override void Draw()
     {
+        DrawToolbar();
+        ImGui.Separator();
+        ImGui.Spacing();
+
         if (selectedType is null)
         {
             DrawTypeSelection();
@@ -53,15 +58,6 @@ public sealed class TrainingWindow : Window, IDisposable
         }
 
         current ??= NextCard();
-
-        if (ImGui.SmallButton("Change script"))
-        {
-            selectedType = null;
-            current = null;
-            return;
-        }
-
-        ImGui.Spacing();
 
         using (kanaFont.Push())
             ImGui.TextUnformatted(current.Kana.Character);
@@ -87,6 +83,37 @@ public sealed class TrainingWindow : Window, IDisposable
 
         ImGui.Spacing();
         ImGui.TextDisabled($"Streak: {plugin.CurrentProgress.CurrentStreak}  Best: {plugin.CurrentProgress.BestStreak}");
+    }
+
+    private void DrawToolbar()
+    {
+        if (selectedType is not null && IconButton(FontAwesomeIcon.ArrowRightArrowLeft, "Switch script"))
+        {
+            selectedType = null;
+            current = null;
+        }
+
+        if (selectedType is not null) ImGui.SameLine();
+
+        if (IconButton(FontAwesomeIcon.ChartBar, "Stats"))
+            plugin.ToggleStatsUi();
+
+        ImGui.SameLine();
+
+        if (IconButton(FontAwesomeIcon.Cog, "Settings"))
+            plugin.ToggleConfigUi();
+    }
+
+    private static bool IconButton(FontAwesomeIcon icon, string tooltip)
+    {
+        bool clicked;
+        using (Plugin.PluginInterface.UiBuilder.IconFontHandle.Push())
+            clicked = ImGui.Button(icon.ToIconString());
+
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip(tooltip);
+
+        return clicked;
     }
 
     private void DrawTypeSelection()

@@ -99,6 +99,8 @@ public sealed class Plugin : IDalamudPlugin
 
     public void ToggleMainUi() => TrainingWindow.Toggle();
 
+    public void ToggleStatsUi() => StatsWindow.Toggle();
+
     private void OnConditionChange(ConditionFlag flag, bool value)
     {
         if (!value) return;
