@@ -7,15 +7,26 @@ public sealed class CharacterProgress
     public int CurrentStreak { get; set; }
     public int BestStreak { get; set; }
 
-    /// <summary>How many kana are unlocked per script, in <see cref="KanaRepository"/>'s learning
-    /// order. Kana unlock one at a time, not row by row, starting at 1.</summary>
-    public Dictionary<KanaType, int> UnlockedCount { get; set; } = new();
+    /// <summary>Characters unlocked so far per script. Seeded with the vowel row (plus the
+    /// standalone ん/ン) the first time a script is touched; from there, each gojuon column
+    /// (a-ka-sa-ta..., i-ki-shi-chi..., ...) advances independently as its current kana is
+    /// answered correctly enough times.</summary>
+    public Dictionary<KanaType, HashSet<string>> UnlockedCharacters { get; set; } = new();
 
     public Dictionary<string, SrsCardState> Cards { get; set; } = new();
 
-    public int GetUnlockedCount(KanaType type) => UnlockedCount.TryGetValue(type, out var value) ? value : 1;
+    public HashSet<string> GetUnlockedCharacters(KanaType type)
+    {
+        if (!UnlockedCharacters.TryGetValue(type, out var set))
+        {
+            set = [];
+            UnlockedCharacters[type] = set;
+        }
 
-    public void SetUnlockedCount(KanaType type, int value) => UnlockedCount[type] = value;
+        return set;
+    }
+
+    public void ClearUnlockedCharacters(KanaType type) => UnlockedCharacters[type] = [];
 
     public SrsCardState GetOrCreateCard(string character)
     {

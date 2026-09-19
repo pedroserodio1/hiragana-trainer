@@ -7,8 +7,12 @@ public static class KanaRepository
 {
     private const string ResourceName = "HiraganaTrainer.Core.Data.kana.json";
 
-    /// <summary>Base gojuon order, same order kana.json is authored in. Kana unlock one at a
-    /// time in this order (per script), so this list also doubles as the learning order.</summary>
+    /// <summary>Gojuon row order, used to find the "next row down" within a column
+    /// (e.g. after row "a" comes row "k": あ → か). The standalone ん/ン (Row "single")
+    /// is intentionally not part of this sequence — it never chains into anything.</summary>
+    public static readonly string[] RowOrder =
+        ["a", "k", "s", "t", "n", "h", "m", "y", "r", "w"];
+
     public static readonly IReadOnlyList<Kana> All = Load();
 
     private static IReadOnlyList<Kana> Load()
