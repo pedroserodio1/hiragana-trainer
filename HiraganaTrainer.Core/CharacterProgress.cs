@@ -7,14 +7,15 @@ public sealed class CharacterProgress
     public int CurrentStreak { get; set; }
     public int BestStreak { get; set; }
 
-    /// <summary>How many rows of <see cref="KanaRepository.RowOrder"/> are unlocked per script, starting at 1.</summary>
-    public Dictionary<KanaType, int> UnlockedGroups { get; set; } = new();
+    /// <summary>How many kana are unlocked per script, in <see cref="KanaRepository"/>'s learning
+    /// order. Kana unlock one at a time, not row by row, starting at 1.</summary>
+    public Dictionary<KanaType, int> UnlockedCount { get; set; } = new();
 
     public Dictionary<string, SrsCardState> Cards { get; set; } = new();
 
-    public int GetUnlockedGroups(KanaType type) => UnlockedGroups.TryGetValue(type, out var value) ? value : 1;
+    public int GetUnlockedCount(KanaType type) => UnlockedCount.TryGetValue(type, out var value) ? value : 1;
 
-    public void SetUnlockedGroups(KanaType type, int value) => UnlockedGroups[type] = value;
+    public void SetUnlockedCount(KanaType type, int value) => UnlockedCount[type] = value;
 
     public SrsCardState GetOrCreateCard(string character)
     {

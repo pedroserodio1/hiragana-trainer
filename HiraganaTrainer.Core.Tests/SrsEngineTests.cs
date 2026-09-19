@@ -10,6 +10,8 @@ public class SrsEngineTests
     private static readonly Kana Ka = new("か", "ka", KanaType.Hiragana, "k", "a");
     private static readonly Kana Ki = new("き", "ki", KanaType.Hiragana, "k", "i");
     private static readonly Kana Sa = new("さ", "sa", KanaType.Hiragana, "s", "a");
+    private static readonly Kana Se = new("せ", "se", KanaType.Hiragana, "s", "e");
+    private static readonly Kana So = new("そ", "so", KanaType.Hiragana, "s", "o");
 
     [Fact]
     public void RecordAnswer_Correct_PromotesBoxAndUpdatesStreak()
@@ -99,6 +101,7 @@ public class SrsEngineTests
     public void SelectNextCard_PrefersEligibleCardsOverNonEligible()
     {
         var progress = new CharacterProgress();
+        progress.SetUnlockedCount(KanaType.Hiragana, 2); // both A and I already unlocked
         SrsEngine.RecordTeach(progress, A.Character);
         SrsEngine.RecordTeach(progress, I.Character);
         SrsEngine.RecordAnswer(progress, A.Character, correct: true); // -> box 2, interval 2 turns
@@ -115,6 +118,7 @@ public class SrsEngineTests
     public void SelectNextCard_FavorsCardsWithMoreMistakes_WhenBothEligible()
     {
         var progress = new CharacterProgress();
+        progress.SetUnlockedCount(KanaType.Hiragana, 2);
         SrsEngine.RecordTeach(progress, A.Character);
         SrsEngine.RecordTeach(progress, I.Character);
         for (var i = 0; i < 8; i++)
@@ -135,43 +139,52 @@ public class SrsEngineTests
     }
 
     [Fact]
-    public void GetUnlockedPool_OnlyIncludesRowsWithinUnlockCount()
+    public void GetUnlockedPool_OnlyIncludesFirstNKanaInLearningOrder()
     {
-        var progress = new CharacterProgress(); // defaults to 1 unlocked row ("a")
+        var progress = new CharacterProgress(); // defaults to 1 unlocked kana
 
         var pool = SrsEngine.GetUnlockedPool(progress, new[] { A, I, Ka }, KanaType.Hiragana);
 
-        Assert.Equal(new[] { A, I }, pool);
+        Assert.Equal(new[] { A }, pool);
     }
 
     [Fact]
-    public void MaybeUnlockNextGroup_UnlocksNextRow_WhenCurrentGroupIsMastered()
+    public void MaybeUnlockNext_UnlocksNextKana_WhenFrontierIsMastered()
     {
         var progress = new CharacterProgress();
         var allKana = new[] { A, I, Ka };
         SrsEngine.RecordTeach(progress, A.Character);
-        SrsEngine.RecordTeach(progress, I.Character);
         SrsEngine.RecordAnswer(progress, A.Character, correct: true); // box 2
-        SrsEngine.RecordAnswer(progress, I.Character, correct: true); // box 2
 
-        SrsEngine.MaybeUnlockNextGroup(progress, allKana, KanaType.Hiragana);
+        SrsEngine.MaybeUnlockNext(progress, allKana, KanaType.Hiragana);
 
-        Assert.Equal(2, progress.GetUnlockedGroups(KanaType.Hiragana));
+        Assert.Equal(2, progress.GetUnlockedCount(KanaType.Hiragana));
     }
 
     [Fact]
-    public void MaybeUnlockNextGroup_StaysLocked_WhenCurrentGroupIsNotMastered()
+    public void MaybeUnlockNext_StaysLocked_WhenFrontierIsNotMasteredYet()
     {
         var progress = new CharacterProgress();
         var allKana = new[] { A, I, Ka };
+        SrsEngine.RecordTeach(progress, A.Character); // stays box 1
+
+        SrsEngine.MaybeUnlockNext(progress, allKana, KanaType.Hiragana);
+
+        Assert.Equal(1, progress.GetUnlockedCount(KanaType.Hiragana));
+    }
+
+    [Fact]
+    public void GetSeenPool_OnlyIncludesTaughtKana_RegardlessOfRow()
+    {
+        var progress = new CharacterProgress();
         SrsEngine.RecordTeach(progress, A.Character);
-        SrsEngine.RecordTeach(progress, I.Character);
-        SrsEngine.RecordAnswer(progress, A.Character, correct: true); // box 2
-        // I stays at box 1, not mastered yet
+        SrsEngine.RecordTeach(progress, Ka.Character);
+        SrsEngine.RecordTeach(progress, Se.Character);
+        // So was never taught, even though it's in the pool passed in.
 
-        SrsEngine.MaybeUnlockNextGroup(progress, allKana, KanaType.Hiragana);
+        var seen = SrsEngine.GetSeenPool(progress, new[] { A, Ka, Se, So }, KanaType.Hiragana);
 
-        Assert.Equal(1, progress.GetUnlockedGroups(KanaType.Hiragana));
+        Assert.Equal(new[] { A, Ka, Se }, seen);
     }
 
     [Fact]
@@ -193,5 +206,18 @@ public class SrsEngineTests
         var distractors = SrsEngine.SelectDistractors(Ka, pool, count: 1, new Random(1));
 
         Assert.Equal(Ki, distractors.Single()); // same row "k", the only same-group option
+    }
+
+    [Fact]
+    public void SelectDistractors_CanMixKanaFromDifferentRows_WhenPoolSpansRows()
+    {
+        // Mirrors picking options across everything taught so far (e.g. A, KA, SE, SO),
+        // not just the correct answer's own row/column.
+        var pool = new[] { A, Ka, Se, So };
+
+        var distractors = SrsEngine.SelectDistractors(A, pool, count: 3, new Random(1));
+
+        Assert.Equal(3, distractors.Count);
+        Assert.DoesNotContain(A, distractors);
     }
 }

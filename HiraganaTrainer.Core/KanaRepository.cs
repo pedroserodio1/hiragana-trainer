@@ -7,10 +7,8 @@ public static class KanaRepository
 {
     private const string ResourceName = "HiraganaTrainer.Core.Data.kana.json";
 
-    /// <summary>Gojuon row unlock order, used to introduce kana in small groups instead of all at once.</summary>
-    public static readonly IReadOnlyList<string> RowOrder =
-        ["a", "k", "s", "t", "n", "h", "m", "y", "r", "w", "single"];
-
+    /// <summary>Base gojuon order, same order kana.json is authored in. Kana unlock one at a
+    /// time in this order (per script), so this list also doubles as the learning order.</summary>
     public static readonly IReadOnlyList<Kana> All = Load();
 
     private static IReadOnlyList<Kana> Load()

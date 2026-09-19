@@ -14,8 +14,9 @@ public sealed record NextCard(Kana Kana, CardPresentation Presentation);
 /// <summary>
 /// Leitner scheduling by turn count, not wall-clock time: nothing accumulates
 /// backlog if the player goes days without opening the game. Kana are introduced
-/// gojuon row by row (per script) instead of all at once, and within what's
-/// eligible for review, cards the player struggles with are picked more often.
+/// one at a time (per script, in gojuon order) instead of a whole row at once, and
+/// within what's eligible for review, cards the player struggles with are picked
+/// more often.
 /// </summary>
 public static class SrsEngine
 {
@@ -23,25 +24,34 @@ public static class SrsEngine
     public static readonly int[] BoxIntervals = [1, 2, 4, 8, 16];
     public const int MaxBox = 5;
 
-    /// <summary>Box a card must reach before it counts as "mastered enough" to unlock the next row.</summary>
+    /// <summary>Box a card must reach before it counts as "mastered enough" to unlock the next kana.</summary>
     public const int MasteryBoxThreshold = 2;
 
     public static void StartNewTurn(CharacterProgress progress) => progress.CurrentTurn++;
 
+    /// <summary>The kana unlocked so far for this script, in learning order (<paramref name="allKana"/>
+    /// must already be ordered that way, as <see cref="KanaRepository.All"/> is).</summary>
     public static IReadOnlyList<Kana> GetUnlockedPool(CharacterProgress progress, IReadOnlyList<Kana> allKana, KanaType type)
     {
-        var unlockedRows = KanaRepository.RowOrder.Take(progress.GetUnlockedGroups(type)).ToHashSet();
-        return allKana.Where(k => k.Type == type && unlockedRows.Contains(k.Row)).ToList();
+        var ordered = allKana.Where(k => k.Type == type).ToList();
+        var count = Math.Min(progress.GetUnlockedCount(type), ordered.Count);
+        return ordered.Take(count).ToList();
     }
 
-    public static void MaybeUnlockNextGroup(CharacterProgress progress, IReadOnlyList<Kana> allKana, KanaType type)
-    {
-        var unlocked = progress.GetUnlockedGroups(type);
-        if (unlocked >= KanaRepository.RowOrder.Count) return;
+    /// <summary>Kana the player has actually been taught, regardless of which row they belong to —
+    /// used as the pool for multiple-choice distractors, so options never include an untaught kana.</summary>
+    public static IReadOnlyList<Kana> GetSeenPool(CharacterProgress progress, IReadOnlyList<Kana> allKana, KanaType type) =>
+        allKana.Where(k => k.Type == type && progress.Cards.ContainsKey(k.Character)).ToList();
 
-        var pool = GetUnlockedPool(progress, allKana, type);
-        var mastered = pool.All(k => progress.Cards.TryGetValue(k.Character, out var s) && s.Box >= MasteryBoxThreshold);
-        if (mastered) progress.SetUnlockedGroups(type, unlocked + 1);
+    public static void MaybeUnlockNext(CharacterProgress progress, IReadOnlyList<Kana> allKana, KanaType type)
+    {
+        var ordered = allKana.Where(k => k.Type == type).ToList();
+        var count = progress.GetUnlockedCount(type);
+        if (count >= ordered.Count) return;
+
+        var frontier = ordered[count - 1];
+        if (progress.Cards.TryGetValue(frontier.Character, out var state) && state.Box >= MasteryBoxThreshold)
+            progress.SetUnlockedCount(type, count + 1);
     }
 
     public static bool IsEligible(CharacterProgress progress, Kana kana)
@@ -55,7 +65,7 @@ public static class SrsEngine
 
     public static NextCard SelectNextCard(CharacterProgress progress, IReadOnlyList<Kana> allKana, KanaType type, Random random)
     {
-        MaybeUnlockNextGroup(progress, allKana, type);
+        MaybeUnlockNext(progress, allKana, type);
         var pool = GetUnlockedPool(progress, allKana, type);
         if (pool.Count == 0)
             throw new ArgumentException("No kana unlocked for this type.", nameof(allKana));
@@ -97,7 +107,8 @@ public static class SrsEngine
         state.LastSeenTurn = progress.CurrentTurn;
     }
 
-    /// <summary>Picks plausible wrong answers: same gojuon row/column first, then any other kana in the pool.</summary>
+    /// <summary>Picks plausible wrong answers from the given pool (normally "already taught" kana):
+    /// same gojuon row/column first, then any other kana in the pool.</summary>
     public static IReadOnlyList<Kana> SelectDistractors(Kana correct, IReadOnlyList<Kana> pool, int count, Random random)
     {
         var others = pool.Where(k => k.Character != correct.Character).ToList();

@@ -163,8 +163,8 @@ public sealed class TrainingWindow : Window, IDisposable
 
         if (next.Presentation == CardPresentation.Quiz)
         {
-            var pool = SrsEngine.GetUnlockedPool(progress, KanaRepository.All, selectedType.Value);
-            var distractors = SrsEngine.SelectDistractors(next.Kana, pool, DistractorCount, random);
+            var seenPool = SrsEngine.GetSeenPool(progress, KanaRepository.All, selectedType.Value);
+            var distractors = SrsEngine.SelectDistractors(next.Kana, seenPool, DistractorCount, random);
             choices = SrsEngine.Shuffle([next.Kana, .. distractors], random);
         }
         else
