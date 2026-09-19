@@ -3,7 +3,7 @@
     "Author": "Pedro Serodio",
     "Name": "Hiragana Trainer",
     "InternalName": "HiraganaTrainer",
-    "AssemblyVersion": "0.1.0.0",
+    "AssemblyVersion": "0.2.0.0",
     "Description": "A hiragana/katakana trainer using SRS (Leitner). Open it with /kana or let\r\nthe plugin remind you while you're queuing for a duty, with a configurable cooldown.",
     "ApplicableVersion": "any",
     "RepoUrl": "https://github.com/pedroserodio1/hiragana-trainer",
@@ -19,6 +19,6 @@
     "IsHide": false,
     "DownloadLinkInstall": "https://github.com/pedroserodio1/hiragana-trainer/releases/latest/download/latest.zip",
     "DownloadLinkUpdate": "https://github.com/pedroserodio1/hiragana-trainer/releases/latest/download/latest.zip",
-    "LastUpdate": 1789846149
+    "LastUpdate": 1789847824
   }
 ]
