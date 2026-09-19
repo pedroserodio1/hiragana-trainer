@@ -21,19 +21,6 @@ Hiragana Pro app.
 - Progress and stats (correct/incorrect per kana, streak) saved per
   character.
 
-## Building locally
-
-Requirements: .NET SDK 10+, [XIVLauncher/Dalamud](https://github.com/goatcorp/FFXIVQuickLauncher)
-installed.
-
-```bash
-dotnet build
-```
-
-To test in-game, point the `HiraganaTrainer` project's build output at the
-XIVLauncher `devPlugins` folder (or set a "Dev Plugin Location" in the
-Dalamud settings).
-
 ## Tests
 
 ```bash
