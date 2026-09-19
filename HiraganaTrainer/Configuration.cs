@@ -23,8 +23,8 @@ public class Configuration : IPluginConfiguration
     public bool TriggerOnDutyQueue { get; set; } = true;
     public AnswerMode DefaultAnswerMode { get; set; } = AnswerMode.MultipleChoice;
 
-    /// <summary>Correct answers needed on every kana in the current row before the next row
-    /// unlocks — same scale as the mastery stars (15 = fully mastered). Higher = slower pace.</summary>
+    /// <summary>Correct answers needed on a kana before the next one unlocks — same scale as the
+    /// mastery stars (15 = fully mastered). Higher = slower, more deliberate pace.</summary>
     public int NewKanaUnlockThreshold { get; set; } = Core.SrsEngine.DefaultUnlockThreshold;
 
     // Per-character SRS progress, keyed by IClientState.LocalContentId.
