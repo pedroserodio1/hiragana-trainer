@@ -1,0 +1,78 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-2022
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v5
+
+    - name: Install .NET
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: 10.0.x
+
+    - name: Download Dalamud
+      run: |
+        Invoke-WebRequest -Uri https://goatcorp.github.io/dalamud-distrib/latest.zip -OutFile dalamud-latest.zip
+        Expand-Archive -Force dalamud-latest.zip "$env:AppData\XIVLauncher\addon\Hooks\dev"
+
+    - name: Determine version from tag
+      id: version
+      run: |
+        $version = "${{ github.ref_name }}".TrimStart('v')
+        echo "version=$version" >> $env:GITHUB_OUTPUT
+
+    - name: Run Core tests
+      run: dotnet test HiraganaTrainer.Core.Tests/HiraganaTrainer.Core.Tests.csproj --configuration Release
+
+    - name: Build plugin
+      run: dotnet build HiraganaTrainer.slnx --configuration Release -p:Version=${{ steps.version.outputs.version }}
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: HiraganaTrainer/bin/x64/Release/HiraganaTrainer/latest.zip
+        generate_release_notes: true
+
+    - name: Update pluginmaster.json
+      shell: pwsh
+      run: |
+        $manifest = Get-Content HiraganaTrainer/bin/x64/Release/HiraganaTrainer/HiraganaTrainer.json | ConvertFrom-Json
+        $downloadUrl = "https://github.com/${{ github.repository }}/releases/latest/download/latest.zip"
+
+        $entry = [ordered]@{
+          Author              = $manifest.Author
+          Name                = $manifest.Name
+          InternalName        = $manifest.InternalName
+          AssemblyVersion     = $manifest.AssemblyVersion
+          Description         = $manifest.Description
+          ApplicableVersion   = $manifest.ApplicableVersion
+          RepoUrl             = $manifest.RepoUrl
+          Tags                = $manifest.Tags
+          DalamudApiLevel     = $manifest.DalamudApiLevel
+          Punchline           = $manifest.Punchline
+          IsHide              = $false
+          DownloadLinkInstall = $downloadUrl
+          DownloadLinkUpdate  = $downloadUrl
+          LastUpdate          = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+        }
+
+        ConvertTo-Json @($entry) -Depth 5 | Set-Content pluginmaster.json
+
+    - name: Commit pluginmaster.json
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add pluginmaster.json
+        git diff --cached --quiet || git commit -m "chore: update pluginmaster.json for ${{ github.ref_name }}"
+        git push origin HEAD:master

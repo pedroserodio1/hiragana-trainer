@@ -40,6 +40,27 @@ Dalamud settings).
 dotnet test
 ```
 
+## Installing (custom repository)
+
+This plugin isn't on the official Dalamud plugin repository — install it via
+a custom repository instead:
+
+1. In-game, open `/xlsettings` → **Experimental** tab → **Custom Plugin
+   Repositories**.
+2. Add: `https://raw.githubusercontent.com/pedroserodio1/hiragana-trainer/master/pluginmaster.json`
+3. Save, then find "Hiragana Trainer" in `/xlplugins`.
+
+## Releasing
+
+Pushing a `v*` tag (e.g. `v0.1.0`) triggers `.github/workflows/release.yml`,
+which builds in Release, publishes a GitHub Release with the packaged zip,
+and regenerates `pluginmaster.json` so existing installs pick up the update:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
