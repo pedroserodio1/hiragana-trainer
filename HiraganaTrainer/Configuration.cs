@@ -19,7 +19,10 @@ public class Configuration : IPluginConfiguration
     public bool AutoTriggerEnabled { get; set; } = true;
     public int AutoTriggerCooldownMinutes { get; set; } = 15;
     public bool TriggerOnLoadingScreen { get; set; } = true;
-    public bool TriggerOnDutyPop { get; set; } = true;
+
+    /// <summary>Open automatically when you register for a duty queue — closes again as soon as a
+    /// duty is found, so it never blocks the confirm dialog's response timer.</summary>
+    public bool TriggerOnDutyQueue { get; set; } = true;
     public AnswerMode DefaultAnswerMode { get; set; } = AnswerMode.MultipleChoice;
 
     /// <summary>Correct answers needed on a kana before the next one unlocks — same scale as the

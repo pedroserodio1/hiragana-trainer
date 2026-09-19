@@ -42,12 +42,15 @@ public sealed class ConfigWindow : Window, IDisposable
                 config.Save();
             }
 
-            var onDutyPop = config.TriggerOnDutyPop;
-            if (ImGui.Checkbox("Trigger on duty pop", ref onDutyPop))
+            var onDutyQueue = config.TriggerOnDutyQueue;
+            if (ImGui.Checkbox("Trigger while queuing for a duty", ref onDutyQueue))
             {
-                config.TriggerOnDutyPop = onDutyPop;
+                config.TriggerOnDutyQueue = onDutyQueue;
                 config.Save();
             }
+
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip("Opens when you register for a duty, and closes itself as soon as a duty is found.");
 
             var cooldown = config.AutoTriggerCooldownMinutes;
             if (ImGui.SliderInt("Cooldown (minutes)", ref cooldown, 1, 60))

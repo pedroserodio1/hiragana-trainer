@@ -20,7 +20,7 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IPluginLog Log { get; private set; } = null!;
 
     private const string CommandName = "/kana";
-    private const string DutyPopAddonName = "ContentsFinderConfirm";
+    private const string DutyFoundAddonName = "ContentsFinderConfirm";
 
     public Configuration Configuration { get; }
 
@@ -54,13 +54,13 @@ public sealed class Plugin : IDalamudPlugin
         PluginInterface.UiBuilder.OpenMainUi += ToggleMainUi;
 
         Condition.ConditionChange += OnConditionChange;
-        AddonLifecycle.RegisterListener(AddonEvent.PostSetup, DutyPopAddonName, OnDutyPopAddon);
+        AddonLifecycle.RegisterListener(AddonEvent.PostSetup, DutyFoundAddonName, OnDutyFoundAddon);
     }
 
     public void Dispose()
     {
         Condition.ConditionChange -= OnConditionChange;
-        AddonLifecycle.UnregisterListener(AddonEvent.PostSetup, DutyPopAddonName, OnDutyPopAddon);
+        AddonLifecycle.UnregisterListener(AddonEvent.PostSetup, DutyFoundAddonName, OnDutyFoundAddon);
 
         PluginInterface.UiBuilder.Draw -= WindowSystem.Draw;
         PluginInterface.UiBuilder.OpenConfigUi -= ToggleConfigUi;
@@ -103,19 +103,22 @@ public sealed class Plugin : IDalamudPlugin
 
     private void OnConditionChange(ConditionFlag flag, bool value)
     {
-        if (!value) return;
-        if (flag != ConditionFlag.BetweenAreas && flag != ConditionFlag.BetweenAreas51) return;
-        if (!Configuration.TriggerOnLoadingScreen) return;
+        if (flag == ConditionFlag.BetweenAreas || flag == ConditionFlag.BetweenAreas51)
+        {
+            if (value && Configuration.TriggerOnLoadingScreen)
+                TryAutoTrigger();
 
-        TryAutoTrigger();
+            return;
+        }
+
+        // Registered for a duty (roulette/queue) and actively waiting — dead time worth using.
+        if (flag == ConditionFlag.InDutyQueue && value && Configuration.TriggerOnDutyQueue)
+            TryAutoTrigger();
     }
 
-    private void OnDutyPopAddon(AddonEvent type, AddonArgs args)
-    {
-        if (!Configuration.TriggerOnDutyPop) return;
-
-        TryAutoTrigger();
-    }
+    /// <summary>The duty-found confirmation has a short response timer, so the training window
+    /// always gets out of the way here, regardless of how it was opened.</summary>
+    private void OnDutyFoundAddon(AddonEvent type, AddonArgs args) => TrainingWindow.IsOpen = false;
 
     private void TryAutoTrigger()
     {
