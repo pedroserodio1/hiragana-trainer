@@ -12,6 +12,7 @@ public sealed class TrainingWindow : Window, IDisposable
 {
     private const int DistractorCount = 3;
     private const float KanaFontSizeMultiplier = 3.0f;
+    private const string ResetConfirmTitle = "Reset progress?";
 
     private readonly Plugin plugin;
     private readonly Random random = new();
@@ -146,6 +147,36 @@ public sealed class TrainingWindow : Window, IDisposable
         ImGui.Spacing();
         if (ImGui.Button("Start"))
             selectedType = pendingType;
+
+        ImGui.SameLine();
+        if (ImGui.Button("Start over"))
+            ImGui.OpenPopup(ResetConfirmTitle);
+
+        DrawResetConfirmPopup();
+    }
+
+    private void DrawResetConfirmPopup()
+    {
+        if (!ImGui.BeginPopupModal(ResetConfirmTitle, ImGuiWindowFlags.AlwaysAutoResize))
+            return;
+
+        ImGui.TextUnformatted($"Reset all {pendingType} progress? This can't be undone.");
+        ImGui.Spacing();
+
+        if (ImGui.Button("Yes, start over"))
+        {
+            SrsEngine.ResetProgress(plugin.CurrentProgress, KanaRepository.All, pendingType);
+            plugin.Configuration.Save();
+            selectedType = pendingType;
+            current = null;
+            ImGui.CloseCurrentPopup();
+        }
+
+        ImGui.SameLine();
+        if (ImGui.Button("Cancel"))
+            ImGui.CloseCurrentPopup();
+
+        ImGui.EndPopup();
     }
 
     private void DrawTeach()
@@ -155,6 +186,7 @@ public sealed class TrainingWindow : Window, IDisposable
         if (ImGui.Button("Got it"))
         {
             SrsEngine.RecordTeach(plugin.CurrentProgress, current.Kana.Character);
+            plugin.Configuration.Save();
             current = NextCard();
         }
     }
@@ -193,6 +225,7 @@ public sealed class TrainingWindow : Window, IDisposable
     private void Answer(bool correct)
     {
         SrsEngine.RecordAnswer(plugin.CurrentProgress, current!.Kana.Character, correct);
+        plugin.Configuration.Save();
         lastAnswerCorrect = correct;
     }
 

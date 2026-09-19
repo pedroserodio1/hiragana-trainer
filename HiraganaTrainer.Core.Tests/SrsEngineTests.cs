@@ -241,6 +241,21 @@ public class SrsEngineTests
     }
 
     [Fact]
+    public void ResetProgress_ClearsCardsAndUnlockCount_ForThatTypeOnly()
+    {
+        var progress = new CharacterProgress();
+        progress.SetUnlockedCount(KanaType.Hiragana, 3);
+        SrsEngine.RecordAnswer(progress, A.Character, correct: true);
+        SrsEngine.RecordAnswer(progress, I.Character, correct: true);
+
+        SrsEngine.ResetProgress(progress, new[] { A, I, Ka }, KanaType.Hiragana);
+
+        Assert.Equal(1, progress.GetUnlockedCount(KanaType.Hiragana));
+        Assert.DoesNotContain(A.Character, progress.Cards.Keys);
+        Assert.DoesNotContain(I.Character, progress.Cards.Keys);
+    }
+
+    [Fact]
     public void SelectDistractors_NeverIncludesTheCorrectAnswer()
     {
         var pool = new[] { A, Ka, Ki, Sa };

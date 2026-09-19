@@ -49,6 +49,16 @@ public static class SrsEngine
     public static IReadOnlyList<Kana> GetSeenPool(CharacterProgress progress, IReadOnlyList<Kana> allKana, KanaType type) =>
         allKana.Where(k => k.Type == type && progress.Cards.ContainsKey(k.Character)).ToList();
 
+    /// <summary>Wipes all progress for one script (unlocked kana and per-card state), so it starts over
+    /// from the first kana. The other script and the character's streak are left untouched.</summary>
+    public static void ResetProgress(CharacterProgress progress, IReadOnlyList<Kana> allKana, KanaType type)
+    {
+        foreach (var kana in allKana.Where(k => k.Type == type))
+            progress.Cards.Remove(kana.Character);
+
+        progress.SetUnlockedCount(type, 1);
+    }
+
     public static void MaybeUnlockNext(CharacterProgress progress, IReadOnlyList<Kana> allKana, KanaType type)
     {
         var ordered = allKana.Where(k => k.Type == type).ToList();
