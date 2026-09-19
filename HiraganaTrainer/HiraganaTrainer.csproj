@@ -10,6 +10,7 @@
     <Punchline>Train hiragana and katakana with spaced repetition, without leaving the game.</Punchline>
     <Description>A hiragana/katakana trainer using SRS (Leitner). Open it with /kana or let
 the plugin remind you while you're queuing for a duty, with a configurable cooldown.</Description>
+    <RepoUrl>https://github.com/pedroserodio1/hiragana-trainer</RepoUrl>
     <Tags>japanese;learning;kana;srs</Tags>
   </PropertyGroup>
 
