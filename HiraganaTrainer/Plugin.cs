@@ -101,17 +101,10 @@ public sealed class Plugin : IDalamudPlugin
 
     public void ToggleStatsUi() => StatsWindow.Toggle();
 
+    // Registered for a duty (roulette/queue) and actively waiting — real dead time, unlike a
+    // loading screen, where there's nothing to look at or interact with anyway.
     private void OnConditionChange(ConditionFlag flag, bool value)
     {
-        if (flag == ConditionFlag.BetweenAreas || flag == ConditionFlag.BetweenAreas51)
-        {
-            if (value && Configuration.TriggerOnLoadingScreen)
-                TryAutoTrigger();
-
-            return;
-        }
-
-        // Registered for a duty (roulette/queue) and actively waiting — dead time worth using.
         if (flag == ConditionFlag.InDutyQueue && value && Configuration.TriggerOnDutyQueue)
             TryAutoTrigger();
     }

@@ -18,8 +18,6 @@ public class Configuration : IPluginConfiguration
     // Global settings — same for every character (confirmed default: everything configurable).
     public bool AutoTriggerEnabled { get; set; } = true;
     public int AutoTriggerCooldownMinutes { get; set; } = 15;
-    public bool TriggerOnLoadingScreen { get; set; } = true;
-
     /// <summary>Open automatically when you register for a duty queue — closes again as soon as a
     /// duty is found, so it never blocks the confirm dialog's response timer.</summary>
     public bool TriggerOnDutyQueue { get; set; } = true;

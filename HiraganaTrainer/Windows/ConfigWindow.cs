@@ -35,13 +35,6 @@ public sealed class ConfigWindow : Window, IDisposable
 
         using (ImRaii.Disabled(!config.AutoTriggerEnabled))
         {
-            var onLoadingScreen = config.TriggerOnLoadingScreen;
-            if (ImGui.Checkbox("Trigger on loading screens", ref onLoadingScreen))
-            {
-                config.TriggerOnLoadingScreen = onLoadingScreen;
-                config.Save();
-            }
-
             var onDutyQueue = config.TriggerOnDutyQueue;
             if (ImGui.Checkbox("Trigger while queuing for a duty", ref onDutyQueue))
             {
