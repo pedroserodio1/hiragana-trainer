@@ -61,29 +61,37 @@ public static class SrsEngine
         progress.ClearUnlockedCharacters(type);
     }
 
-    /// <summary>Seeds the vowel row (+ ん/ン) as unlocked on first use, then advances every unlocked
-    /// column independently: a kana that's reached <paramref name="unlockThreshold"/> correct
-    /// answers unlocks the next kana down its own column (same <see cref="Kana.Column"/>, next
-    /// row in <see cref="KanaRepository.RowOrder"/>).</summary>
+    /// <summary>Seeds the vowel row as unlocked on first use, then advances every unlocked column
+    /// independently: a kana that's reached <paramref name="unlockThreshold"/> correct answers
+    /// unlocks the next kana down its own column (same <see cref="Kana.Column"/>, next row in
+    /// <see cref="KanaRepository.RowOrder"/>). The standalone ん/ン has no column to chain down,
+    /// so it unlocks last, once every other kana in the script is already unlocked.</summary>
     public static void AdvanceUnlocks(CharacterProgress progress, IReadOnlyList<Kana> allKana, KanaType type, int unlockThreshold = DefaultUnlockThreshold)
     {
         var unlocked = progress.GetUnlockedCharacters(type);
-        var typeKana = allKana.Where(k => k.Type == type).ToList();
+        var chainable = allKana.Where(k => k.Type == type && k.Row != "single").ToList();
+        var standalone = allKana.Where(k => k.Type == type && k.Row == "single").ToList();
 
         if (unlocked.Count == 0)
         {
-            foreach (var kana in typeKana.Where(k => k.Row == "a" || k.Row == "single"))
+            foreach (var kana in chainable.Where(k => k.Row == "a"))
                 unlocked.Add(kana.Character);
             return;
         }
 
-        foreach (var kana in typeKana.Where(k => unlocked.Contains(k.Character)))
+        foreach (var kana in chainable.Where(k => unlocked.Contains(k.Character)))
         {
             if (!progress.Cards.TryGetValue(kana.Character, out var state) || state.CorrectCount < unlockThreshold)
                 continue;
 
-            var next = NextInColumn(kana, typeKana);
+            var next = NextInColumn(kana, chainable);
             if (next is not null) unlocked.Add(next.Character);
+        }
+
+        if (chainable.Count > 0 && chainable.All(k => unlocked.Contains(k.Character)))
+        {
+            foreach (var kana in standalone)
+                unlocked.Add(kana.Character);
         }
     }
 

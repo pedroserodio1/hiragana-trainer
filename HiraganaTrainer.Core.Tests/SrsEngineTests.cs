@@ -138,7 +138,7 @@ public class SrsEngineTests
     }
 
     [Fact]
-    public void AdvanceUnlocks_SeedsVowelRowAndStandaloneN_OnFirstUse()
+    public void AdvanceUnlocks_SeedsOnlyTheVowelRow_OnFirstUse()
     {
         var progress = new CharacterProgress();
         var allKana = new[] { A, I, Ka, N };
@@ -146,7 +146,27 @@ public class SrsEngineTests
         SrsEngine.AdvanceUnlocks(progress, allKana, KanaType.Hiragana);
 
         var pool = SrsEngine.GetUnlockedPool(progress, allKana, KanaType.Hiragana);
-        Assert.Equal(new[] { A, I, N }, pool); // vowel row + ん; か stays locked until unlocked via あ
+        Assert.Equal(new[] { A, I }, pool); // か stays locked until unlocked via あ; ん unlocks last, not first
+    }
+
+    [Fact]
+    public void AdvanceUnlocks_UnlocksStandaloneN_OnlyOnceEveryOtherKanaIsUnlocked()
+    {
+        var progress = new CharacterProgress();
+        var allKana = new[] { A, Ka, N }; // column "a" in this pool is just あ → か
+        SrsEngine.AdvanceUnlocks(progress, allKana, KanaType.Hiragana); // seeds A only
+
+        Assert.DoesNotContain(N, SrsEngine.GetUnlockedPool(progress, allKana, KanaType.Hiragana));
+
+        SrsEngine.RecordTeach(progress, A.Character);
+        SrsEngine.RecordAnswer(progress, A.Character, correct: true);
+        SrsEngine.RecordAnswer(progress, A.Character, correct: true); // あ reaches the threshold, unlocking か
+
+        SrsEngine.AdvanceUnlocks(progress, allKana, KanaType.Hiragana, unlockThreshold: 2);
+
+        var pool = SrsEngine.GetUnlockedPool(progress, allKana, KanaType.Hiragana);
+        Assert.Contains(Ka, pool);
+        Assert.Contains(N, pool); // か was the last remaining kana in this pool, so ん unlocks too
     }
 
     [Fact]
