@@ -40,7 +40,7 @@ public sealed class StatsWindow : Window, IDisposable
 
         ImGui.Spacing();
 
-        if (!ImGui.BeginTable("##HiraganaTrainer_StatsTable", 5, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg))
+        if (!ImGui.BeginTable("##HiraganaTrainer_StatsTable", 6, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg))
             return;
 
         ImGui.TableSetupColumn("Kana");
@@ -48,6 +48,7 @@ public sealed class StatsWindow : Window, IDisposable
         ImGui.TableSetupColumn("Correct");
         ImGui.TableSetupColumn("Wrong");
         ImGui.TableSetupColumn("Box");
+        ImGui.TableSetupColumn("Mastery");
         ImGui.TableHeadersRow();
 
         foreach (var kana in KanaRepository.All.Where(Matches))
@@ -60,6 +61,7 @@ public sealed class StatsWindow : Window, IDisposable
             ImGui.TableNextColumn(); ImGui.TextUnformatted((state?.CorrectCount ?? 0).ToString());
             ImGui.TableNextColumn(); ImGui.TextUnformatted((state?.IncorrectCount ?? 0).ToString());
             ImGui.TableNextColumn(); ImGui.TextUnformatted((state?.Box ?? 1).ToString());
+            ImGui.TableNextColumn(); MasteryStars.Draw(state?.CorrectCount ?? 0);
         }
 
         ImGui.EndTable();

@@ -59,8 +59,17 @@ public sealed class TrainingWindow : Window, IDisposable
 
         current ??= NextCard();
 
+        if (current.Presentation == CardPresentation.Mastered)
+        {
+            DrawMastered();
+            return;
+        }
+
         using (kanaFont.Push())
             ImGui.TextUnformatted(current.Kana.Character);
+
+        var correctCount = plugin.CurrentProgress.Cards.TryGetValue(current.Kana.Character, out var state) ? state.CorrectCount : 0;
+        MasteryStars.Draw(correctCount);
 
         ImGui.Spacing();
 
@@ -83,6 +92,12 @@ public sealed class TrainingWindow : Window, IDisposable
 
         ImGui.Spacing();
         ImGui.TextDisabled($"Streak: {plugin.CurrentProgress.CurrentStreak}  Best: {plugin.CurrentProgress.BestStreak}");
+    }
+
+    private void DrawMastered()
+    {
+        ImGui.TextColored(MasteryStars.EarnedColor, $"You've mastered every unlocked {selectedType} kana!");
+        ImGui.TextWrapped("Keep practicing and new kana will unlock, or switch scripts above.");
     }
 
     private void DrawToolbar()

@@ -188,6 +188,59 @@ public class SrsEngineTests
     }
 
     [Fact]
+    public void IsMastered_False_BeforeReachingCorrectThreshold()
+    {
+        var progress = new CharacterProgress();
+        for (var i = 0; i < SrsEngine.MasteryCorrectThreshold - 1; i++)
+            SrsEngine.RecordAnswer(progress, A.Character, correct: true);
+
+        Assert.False(SrsEngine.IsMastered(progress, A));
+    }
+
+    [Fact]
+    public void IsMastered_True_OnceCorrectThresholdIsReached()
+    {
+        var progress = new CharacterProgress();
+        for (var i = 0; i < SrsEngine.MasteryCorrectThreshold; i++)
+            SrsEngine.RecordAnswer(progress, A.Character, correct: true);
+
+        Assert.True(SrsEngine.IsMastered(progress, A));
+    }
+
+    [Fact]
+    public void SelectNextCard_ExcludesMasteredCards_EvenWhenTheyWouldOtherwiseBeTheOnlyEligibleOne()
+    {
+        var progress = new CharacterProgress();
+        progress.SetUnlockedCount(KanaType.Hiragana, 2);
+        SrsEngine.RecordTeach(progress, A.Character);
+        SrsEngine.RecordTeach(progress, I.Character);
+        for (var i = 0; i < SrsEngine.MasteryCorrectThreshold; i++)
+            SrsEngine.RecordAnswer(progress, A.Character, correct: true); // A is now mastered
+        SrsEngine.RecordAnswer(progress, I.Character, correct: true); // I: box 2, not mastered
+
+        SrsEngine.StartNewTurn(progress);
+        SrsEngine.StartNewTurn(progress); // enough turns for I (box 2, interval 2) to be eligible again
+
+        var next = SrsEngine.SelectNextCard(progress, new[] { A, I }, KanaType.Hiragana, new Random(1));
+
+        Assert.Equal(I, next.Kana);
+        Assert.Equal(CardPresentation.Quiz, next.Presentation);
+    }
+
+    [Fact]
+    public void SelectNextCard_ReturnsMastered_WhenEveryUnlockedCardIsMastered()
+    {
+        var progress = new CharacterProgress(); // only A unlocked by default
+        SrsEngine.RecordTeach(progress, A.Character);
+        for (var i = 0; i < SrsEngine.MasteryCorrectThreshold; i++)
+            SrsEngine.RecordAnswer(progress, A.Character, correct: true);
+
+        var next = SrsEngine.SelectNextCard(progress, new[] { A }, KanaType.Hiragana, new Random(1));
+
+        Assert.Equal(CardPresentation.Mastered, next.Presentation);
+    }
+
+    [Fact]
     public void SelectDistractors_NeverIncludesTheCorrectAnswer()
     {
         var pool = new[] { A, Ka, Ki, Sa };

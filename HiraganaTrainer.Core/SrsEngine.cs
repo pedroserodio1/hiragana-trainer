@@ -7,6 +7,9 @@ public enum CardPresentation
 
     /// <summary>A kana the player has seen before: ask them to answer it.</summary>
     Quiz,
+
+    /// <summary>Every unlocked kana of this script has been mastered — nothing left to review right now.</summary>
+    Mastered,
 }
 
 public sealed record NextCard(Kana Kana, CardPresentation Presentation);
@@ -26,6 +29,9 @@ public static class SrsEngine
 
     /// <summary>Box a card must reach before it counts as "mastered enough" to unlock the next kana.</summary>
     public const int MasteryBoxThreshold = 2;
+
+    /// <summary>Correct answers a card needs before it graduates out of the review rotation entirely.</summary>
+    public const int MasteryCorrectThreshold = 15;
 
     public static void StartNewTurn(CharacterProgress progress) => progress.CurrentTurn++;
 
@@ -63,6 +69,10 @@ public static class SrsEngine
         return progress.CurrentTurn - state.LastSeenTurn >= interval;
     }
 
+    /// <summary>A card that's been answered correctly enough times graduates out of review for good.</summary>
+    public static bool IsMastered(CharacterProgress progress, Kana kana) =>
+        progress.Cards.TryGetValue(kana.Character, out var state) && state.CorrectCount >= MasteryCorrectThreshold;
+
     public static NextCard SelectNextCard(CharacterProgress progress, IReadOnlyList<Kana> allKana, KanaType type, Random random)
     {
         MaybeUnlockNext(progress, allKana, type);
@@ -74,8 +84,12 @@ public static class SrsEngine
         if (unseen.Count > 0)
             return new NextCard(unseen[random.Next(unseen.Count)], CardPresentation.Teach);
 
-        var eligible = pool.Where(k => IsEligible(progress, k)).ToList();
-        var candidates = eligible.Count > 0 ? eligible : pool;
+        var reviewable = pool.Where(k => !IsMastered(progress, k)).ToList();
+        if (reviewable.Count == 0)
+            return new NextCard(pool[0], CardPresentation.Mastered);
+
+        var eligible = reviewable.Where(k => IsEligible(progress, k)).ToList();
+        var candidates = eligible.Count > 0 ? eligible : reviewable;
         return new NextCard(WeightedPick(progress, candidates, random), CardPresentation.Quiz);
     }
 
