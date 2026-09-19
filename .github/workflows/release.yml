@@ -58,6 +58,7 @@ jobs:
           Description         = $manifest.Description
           ApplicableVersion   = $manifest.ApplicableVersion
           RepoUrl             = $manifest.RepoUrl
+          IconUrl             = $manifest.IconUrl
           Tags                = $manifest.Tags
           DalamudApiLevel     = $manifest.DalamudApiLevel
           Punchline           = $manifest.Punchline
