@@ -2,6 +2,7 @@ using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
+using HiraganaTrainer.Core;
 
 namespace HiraganaTrainer.Windows;
 
@@ -63,6 +64,21 @@ public sealed class ConfigWindow : Window, IDisposable
         {
             config.DefaultAnswerMode = (AnswerMode)modeIndex;
             config.Save();
+        }
+
+        ImGui.Spacing();
+
+        var unlockThreshold = config.NewKanaUnlockThreshold;
+        if (ImGui.SliderInt("New kana pace", ref unlockThreshold, 1, SrsEngine.MasteryCorrectThreshold))
+        {
+            config.NewKanaUnlockThreshold = unlockThreshold;
+            config.Save();
+        }
+
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Correct answers needed on a kana before the next one unlocks.\n"
+                + $"Low = new kana appear quickly. {SrsEngine.MasteryCorrectThreshold} = wait until it's fully mastered.");
         }
     }
 }

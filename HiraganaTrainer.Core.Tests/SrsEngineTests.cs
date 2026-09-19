@@ -149,24 +149,39 @@ public class SrsEngineTests
     }
 
     [Fact]
-    public void MaybeUnlockNext_UnlocksNextKana_WhenFrontierIsMastered()
+    public void MaybeUnlockNext_UnlocksNextKana_OnceFrontierReachesTheUnlockThreshold()
     {
         var progress = new CharacterProgress();
         var allKana = new[] { A, I, Ka };
         SrsEngine.RecordTeach(progress, A.Character);
-        SrsEngine.RecordAnswer(progress, A.Character, correct: true); // box 2
+        SrsEngine.RecordAnswer(progress, A.Character, correct: true);
+        SrsEngine.RecordAnswer(progress, A.Character, correct: true); // 2 correct answers
 
-        SrsEngine.MaybeUnlockNext(progress, allKana, KanaType.Hiragana);
+        SrsEngine.MaybeUnlockNext(progress, allKana, KanaType.Hiragana, unlockThreshold: 2);
 
         Assert.Equal(2, progress.GetUnlockedCount(KanaType.Hiragana));
     }
 
     [Fact]
-    public void MaybeUnlockNext_StaysLocked_WhenFrontierIsNotMasteredYet()
+    public void MaybeUnlockNext_StaysLocked_BelowTheUnlockThreshold()
     {
         var progress = new CharacterProgress();
         var allKana = new[] { A, I, Ka };
-        SrsEngine.RecordTeach(progress, A.Character); // stays box 1
+        SrsEngine.RecordTeach(progress, A.Character);
+        SrsEngine.RecordAnswer(progress, A.Character, correct: true); // only 1 correct answer
+
+        SrsEngine.MaybeUnlockNext(progress, allKana, KanaType.Hiragana, unlockThreshold: 2);
+
+        Assert.Equal(1, progress.GetUnlockedCount(KanaType.Hiragana));
+    }
+
+    [Fact]
+    public void MaybeUnlockNext_DefaultThreshold_RequiresSeveralCorrectAnswers_NotJustOne()
+    {
+        var progress = new CharacterProgress();
+        var allKana = new[] { A, I };
+        SrsEngine.RecordTeach(progress, A.Character);
+        SrsEngine.RecordAnswer(progress, A.Character, correct: true); // 1 correct answer is not enough by default
 
         SrsEngine.MaybeUnlockNext(progress, allKana, KanaType.Hiragana);
 

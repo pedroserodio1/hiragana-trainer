@@ -234,7 +234,7 @@ public sealed class TrainingWindow : Window, IDisposable
         var progress = plugin.CurrentProgress;
         SrsEngine.StartNewTurn(progress);
 
-        var next = SrsEngine.SelectNextCard(progress, KanaRepository.All, selectedType!.Value, random);
+        var next = SrsEngine.SelectNextCard(progress, KanaRepository.All, selectedType!.Value, random, plugin.Configuration.NewKanaUnlockThreshold);
 
         if (next.Presentation == CardPresentation.Quiz)
         {

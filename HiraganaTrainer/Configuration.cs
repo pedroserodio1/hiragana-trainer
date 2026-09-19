@@ -22,6 +22,10 @@ public class Configuration : IPluginConfiguration
     public bool TriggerOnDutyPop { get; set; } = true;
     public AnswerMode DefaultAnswerMode { get; set; } = AnswerMode.MultipleChoice;
 
+    /// <summary>Correct answers needed on a kana before the next one unlocks — same scale as the
+    /// mastery stars (15 = fully mastered). Higher = slower, more deliberate pace.</summary>
+    public int NewKanaUnlockThreshold { get; set; } = Core.SrsEngine.DefaultUnlockThreshold;
+
     // Per-character SRS progress, keyed by IClientState.LocalContentId.
     public Dictionary<ulong, CharacterProgress> Characters { get; set; } = new();
 

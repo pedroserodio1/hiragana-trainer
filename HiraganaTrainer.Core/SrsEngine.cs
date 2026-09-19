@@ -27,11 +27,14 @@ public static class SrsEngine
     public static readonly int[] BoxIntervals = [1, 2, 4, 8, 16];
     public const int MaxBox = 5;
 
-    /// <summary>Box a card must reach before it counts as "mastered enough" to unlock the next kana.</summary>
-    public const int MasteryBoxThreshold = 2;
-
     /// <summary>Correct answers a card needs before it graduates out of the review rotation entirely.</summary>
     public const int MasteryCorrectThreshold = 15;
+
+    /// <summary>Default correct answers required on the frontier kana before the next one unlocks,
+    /// used when the caller doesn't pass its own (configurable) pace. Same unit as the mastery
+    /// stars, so "wait until it's mostly learned" and "wait until it's fully mastered" are both
+    /// just a number on the same scale.</summary>
+    public const int DefaultUnlockThreshold = 5;
 
     public static void StartNewTurn(CharacterProgress progress) => progress.CurrentTurn++;
 
@@ -59,14 +62,14 @@ public static class SrsEngine
         progress.SetUnlockedCount(type, 1);
     }
 
-    public static void MaybeUnlockNext(CharacterProgress progress, IReadOnlyList<Kana> allKana, KanaType type)
+    public static void MaybeUnlockNext(CharacterProgress progress, IReadOnlyList<Kana> allKana, KanaType type, int unlockThreshold = DefaultUnlockThreshold)
     {
         var ordered = allKana.Where(k => k.Type == type).ToList();
         var count = progress.GetUnlockedCount(type);
         if (count >= ordered.Count) return;
 
         var frontier = ordered[count - 1];
-        if (progress.Cards.TryGetValue(frontier.Character, out var state) && state.Box >= MasteryBoxThreshold)
+        if (progress.Cards.TryGetValue(frontier.Character, out var state) && state.CorrectCount >= unlockThreshold)
             progress.SetUnlockedCount(type, count + 1);
     }
 
@@ -83,9 +86,9 @@ public static class SrsEngine
     public static bool IsMastered(CharacterProgress progress, Kana kana) =>
         progress.Cards.TryGetValue(kana.Character, out var state) && state.CorrectCount >= MasteryCorrectThreshold;
 
-    public static NextCard SelectNextCard(CharacterProgress progress, IReadOnlyList<Kana> allKana, KanaType type, Random random)
+    public static NextCard SelectNextCard(CharacterProgress progress, IReadOnlyList<Kana> allKana, KanaType type, Random random, int unlockThreshold = DefaultUnlockThreshold)
     {
-        MaybeUnlockNext(progress, allKana, type);
+        MaybeUnlockNext(progress, allKana, type, unlockThreshold);
         var pool = GetUnlockedPool(progress, allKana, type);
         if (pool.Count == 0)
             throw new ArgumentException("No kana unlocked for this type.", nameof(allKana));
