@@ -4,6 +4,7 @@ using Dalamud.Interface;
 using Dalamud.Interface.FontIdentifier;
 using Dalamud.Interface.ManagedFontAtlas;
 using Dalamud.Interface.Windowing;
+using Dalamud.Utility;
 using HiraganaTrainer.Core;
 
 namespace HiraganaTrainer.Windows;
@@ -118,6 +119,11 @@ public sealed class TrainingWindow : Window, IDisposable
 
         if (IconButton(FontAwesomeIcon.Cog, "Settings"))
             plugin.ToggleConfigUi();
+
+        ImGui.SameLine();
+
+        if (IconButton(FontAwesomeIcon.Bug, "Report a bug"))
+            Util.OpenLink($"{Plugin.PluginInterface.Manifest.RepoUrl}/issues/new");
     }
 
     private static bool IconButton(FontAwesomeIcon icon, string tooltip)
