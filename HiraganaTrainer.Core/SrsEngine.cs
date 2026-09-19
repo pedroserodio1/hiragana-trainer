@@ -16,10 +16,11 @@ public sealed record NextCard(Kana Kana, CardPresentation Presentation);
 
 /// <summary>
 /// Leitner scheduling by turn count, not wall-clock time: nothing accumulates
-/// backlog if the player goes days without opening the game. Kana are introduced
-/// one at a time (per script, in gojuon order) instead of a whole row at once, and
-/// within what's eligible for review, cards the player struggles with are picked
-/// more often.
+/// backlog if the player goes days without opening the game. A whole gojuon row
+/// unlocks together (per script) once every kana in the current row is answered
+/// correctly enough times — kana within an unlocked row are still taught one at a
+/// time the first time each is seen. Within what's eligible for review, cards the
+/// player struggles with are picked more often.
 /// </summary>
 public static class SrsEngine
 {
@@ -30,21 +31,20 @@ public static class SrsEngine
     /// <summary>Correct answers a card needs before it graduates out of the review rotation entirely.</summary>
     public const int MasteryCorrectThreshold = 15;
 
-    /// <summary>Default correct answers required on the frontier kana before the next one unlocks,
-    /// used when the caller doesn't pass its own (configurable) pace. Same unit as the mastery
-    /// stars, so "wait until it's mostly learned" and "wait until it's fully mastered" are both
-    /// just a number on the same scale.</summary>
+    /// <summary>Default correct answers required on every kana in the current row before the next
+    /// row unlocks, used when the caller doesn't pass its own (configurable) pace. Same unit as
+    /// the mastery stars, so "wait until it's mostly learned" and "wait until it's fully mastered"
+    /// are both just a number on the same scale.</summary>
     public const int DefaultUnlockThreshold = 5;
 
     public static void StartNewTurn(CharacterProgress progress) => progress.CurrentTurn++;
 
-    /// <summary>The kana unlocked so far for this script, in learning order (<paramref name="allKana"/>
-    /// must already be ordered that way, as <see cref="KanaRepository.All"/> is).</summary>
+    /// <summary>The kana unlocked so far for this script: every kana belonging to one of the
+    /// first N rows of <see cref="KanaRepository.RowOrder"/>.</summary>
     public static IReadOnlyList<Kana> GetUnlockedPool(CharacterProgress progress, IReadOnlyList<Kana> allKana, KanaType type)
     {
-        var ordered = allKana.Where(k => k.Type == type).ToList();
-        var count = Math.Min(progress.GetUnlockedCount(type), ordered.Count);
-        return ordered.Take(count).ToList();
+        var unlockedRows = KanaRepository.RowOrder.Take(progress.GetUnlockedGroups(type)).ToHashSet();
+        return allKana.Where(k => k.Type == type && unlockedRows.Contains(k.Row)).ToList();
     }
 
     /// <summary>Kana the player has actually been taught, regardless of which row they belong to —
@@ -59,18 +59,19 @@ public static class SrsEngine
         foreach (var kana in allKana.Where(k => k.Type == type))
             progress.Cards.Remove(kana.Character);
 
-        progress.SetUnlockedCount(type, 1);
+        progress.SetUnlockedGroups(type, 1);
     }
 
-    public static void MaybeUnlockNext(CharacterProgress progress, IReadOnlyList<Kana> allKana, KanaType type, int unlockThreshold = DefaultUnlockThreshold)
+    /// <summary>Unlocks the next gojuon row once every kana in the currently unlocked rows has
+    /// been answered correctly at least <paramref name="unlockThreshold"/> times.</summary>
+    public static void MaybeUnlockNextGroup(CharacterProgress progress, IReadOnlyList<Kana> allKana, KanaType type, int unlockThreshold = DefaultUnlockThreshold)
     {
-        var ordered = allKana.Where(k => k.Type == type).ToList();
-        var count = progress.GetUnlockedCount(type);
-        if (count >= ordered.Count) return;
+        var unlockedGroups = progress.GetUnlockedGroups(type);
+        if (unlockedGroups >= KanaRepository.RowOrder.Count) return;
 
-        var frontier = ordered[count - 1];
-        if (progress.Cards.TryGetValue(frontier.Character, out var state) && state.CorrectCount >= unlockThreshold)
-            progress.SetUnlockedCount(type, count + 1);
+        var pool = GetUnlockedPool(progress, allKana, type);
+        var allMastered = pool.All(k => progress.Cards.TryGetValue(k.Character, out var s) && s.CorrectCount >= unlockThreshold);
+        if (allMastered) progress.SetUnlockedGroups(type, unlockedGroups + 1);
     }
 
     public static bool IsEligible(CharacterProgress progress, Kana kana)
@@ -88,7 +89,7 @@ public static class SrsEngine
 
     public static NextCard SelectNextCard(CharacterProgress progress, IReadOnlyList<Kana> allKana, KanaType type, Random random, int unlockThreshold = DefaultUnlockThreshold)
     {
-        MaybeUnlockNext(progress, allKana, type, unlockThreshold);
+        MaybeUnlockNextGroup(progress, allKana, type, unlockThreshold);
         var pool = GetUnlockedPool(progress, allKana, type);
         if (pool.Count == 0)
             throw new ArgumentException("No kana unlocked for this type.", nameof(allKana));

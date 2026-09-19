@@ -100,8 +100,7 @@ public class SrsEngineTests
     [Fact]
     public void SelectNextCard_PrefersEligibleCardsOverNonEligible()
     {
-        var progress = new CharacterProgress();
-        progress.SetUnlockedCount(KanaType.Hiragana, 2); // both A and I already unlocked
+        var progress = new CharacterProgress(); // A and I share row "a", unlocked by default
         SrsEngine.RecordTeach(progress, A.Character);
         SrsEngine.RecordTeach(progress, I.Character);
         SrsEngine.RecordAnswer(progress, A.Character, correct: true); // -> box 2, interval 2 turns
@@ -117,8 +116,7 @@ public class SrsEngineTests
     [Fact]
     public void SelectNextCard_FavorsCardsWithMoreMistakes_WhenBothEligible()
     {
-        var progress = new CharacterProgress();
-        progress.SetUnlockedCount(KanaType.Hiragana, 2);
+        var progress = new CharacterProgress(); // A and I share row "a", unlocked by default
         SrsEngine.RecordTeach(progress, A.Character);
         SrsEngine.RecordTeach(progress, I.Character);
         for (var i = 0; i < 8; i++)
@@ -139,53 +137,59 @@ public class SrsEngineTests
     }
 
     [Fact]
-    public void GetUnlockedPool_OnlyIncludesFirstNKanaInLearningOrder()
+    public void GetUnlockedPool_OnlyIncludesKanaFromUnlockedRows()
     {
-        var progress = new CharacterProgress(); // defaults to 1 unlocked kana
+        var progress = new CharacterProgress(); // defaults to 1 unlocked row ("a")
 
         var pool = SrsEngine.GetUnlockedPool(progress, new[] { A, I, Ka }, KanaType.Hiragana);
 
-        Assert.Equal(new[] { A }, pool);
+        Assert.Equal(new[] { A, I }, pool); // both row "a"; Ka (row "k") stays locked
     }
 
     [Fact]
-    public void MaybeUnlockNext_UnlocksNextKana_OnceFrontierReachesTheUnlockThreshold()
+    public void MaybeUnlockNextGroup_UnlocksNextRow_OnceEveryKanaInCurrentRowReachesTheThreshold()
     {
         var progress = new CharacterProgress();
         var allKana = new[] { A, I, Ka };
         SrsEngine.RecordTeach(progress, A.Character);
+        SrsEngine.RecordTeach(progress, I.Character);
         SrsEngine.RecordAnswer(progress, A.Character, correct: true);
-        SrsEngine.RecordAnswer(progress, A.Character, correct: true); // 2 correct answers
+        SrsEngine.RecordAnswer(progress, A.Character, correct: true); // A: 2 correct
+        SrsEngine.RecordAnswer(progress, I.Character, correct: true);
+        SrsEngine.RecordAnswer(progress, I.Character, correct: true); // I: 2 correct
 
-        SrsEngine.MaybeUnlockNext(progress, allKana, KanaType.Hiragana, unlockThreshold: 2);
+        SrsEngine.MaybeUnlockNextGroup(progress, allKana, KanaType.Hiragana, unlockThreshold: 2);
 
-        Assert.Equal(2, progress.GetUnlockedCount(KanaType.Hiragana));
+        Assert.Equal(2, progress.GetUnlockedGroups(KanaType.Hiragana));
     }
 
     [Fact]
-    public void MaybeUnlockNext_StaysLocked_BelowTheUnlockThreshold()
+    public void MaybeUnlockNextGroup_StaysLocked_WhenOnlyPartOfTheRowReachesTheThreshold()
     {
         var progress = new CharacterProgress();
         var allKana = new[] { A, I, Ka };
         SrsEngine.RecordTeach(progress, A.Character);
-        SrsEngine.RecordAnswer(progress, A.Character, correct: true); // only 1 correct answer
+        SrsEngine.RecordTeach(progress, I.Character);
+        SrsEngine.RecordAnswer(progress, A.Character, correct: true);
+        SrsEngine.RecordAnswer(progress, A.Character, correct: true); // A: 2 correct, meets threshold
+        // I stays at 0 correct answers — the row isn't fully ready yet.
 
-        SrsEngine.MaybeUnlockNext(progress, allKana, KanaType.Hiragana, unlockThreshold: 2);
+        SrsEngine.MaybeUnlockNextGroup(progress, allKana, KanaType.Hiragana, unlockThreshold: 2);
 
-        Assert.Equal(1, progress.GetUnlockedCount(KanaType.Hiragana));
+        Assert.Equal(1, progress.GetUnlockedGroups(KanaType.Hiragana));
     }
 
     [Fact]
-    public void MaybeUnlockNext_DefaultThreshold_RequiresSeveralCorrectAnswers_NotJustOne()
+    public void MaybeUnlockNextGroup_DefaultThreshold_RequiresSeveralCorrectAnswers_NotJustOne()
     {
         var progress = new CharacterProgress();
-        var allKana = new[] { A, I };
+        var allKana = new[] { A };
         SrsEngine.RecordTeach(progress, A.Character);
         SrsEngine.RecordAnswer(progress, A.Character, correct: true); // 1 correct answer is not enough by default
 
-        SrsEngine.MaybeUnlockNext(progress, allKana, KanaType.Hiragana);
+        SrsEngine.MaybeUnlockNextGroup(progress, allKana, KanaType.Hiragana);
 
-        Assert.Equal(1, progress.GetUnlockedCount(KanaType.Hiragana));
+        Assert.Equal(1, progress.GetUnlockedGroups(KanaType.Hiragana));
     }
 
     [Fact]
@@ -225,8 +229,7 @@ public class SrsEngineTests
     [Fact]
     public void SelectNextCard_ExcludesMasteredCards_EvenWhenTheyWouldOtherwiseBeTheOnlyEligibleOne()
     {
-        var progress = new CharacterProgress();
-        progress.SetUnlockedCount(KanaType.Hiragana, 2);
+        var progress = new CharacterProgress(); // A and I share row "a", unlocked by default
         SrsEngine.RecordTeach(progress, A.Character);
         SrsEngine.RecordTeach(progress, I.Character);
         for (var i = 0; i < SrsEngine.MasteryCorrectThreshold; i++)
@@ -256,16 +259,16 @@ public class SrsEngineTests
     }
 
     [Fact]
-    public void ResetProgress_ClearsCardsAndUnlockCount_ForThatTypeOnly()
+    public void ResetProgress_ClearsCardsAndUnlockedGroups_ForThatTypeOnly()
     {
         var progress = new CharacterProgress();
-        progress.SetUnlockedCount(KanaType.Hiragana, 3);
+        progress.SetUnlockedGroups(KanaType.Hiragana, 3);
         SrsEngine.RecordAnswer(progress, A.Character, correct: true);
         SrsEngine.RecordAnswer(progress, I.Character, correct: true);
 
         SrsEngine.ResetProgress(progress, new[] { A, I, Ka }, KanaType.Hiragana);
 
-        Assert.Equal(1, progress.GetUnlockedCount(KanaType.Hiragana));
+        Assert.Equal(1, progress.GetUnlockedGroups(KanaType.Hiragana));
         Assert.DoesNotContain(A.Character, progress.Cards.Keys);
         Assert.DoesNotContain(I.Character, progress.Cards.Keys);
     }

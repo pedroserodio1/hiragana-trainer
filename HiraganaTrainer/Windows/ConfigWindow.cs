@@ -73,8 +73,8 @@ public sealed class ConfigWindow : Window, IDisposable
 
         if (ImGui.IsItemHovered())
         {
-            ImGui.SetTooltip("Correct answers needed on a kana before the next one unlocks.\n"
-                + $"Low = new kana appear quickly. {SrsEngine.MasteryCorrectThreshold} = wait until it's fully mastered.");
+            ImGui.SetTooltip("Correct answers needed on every kana in the current row before the\n"
+                + $"next row unlocks. Low = rows unlock quickly. {SrsEngine.MasteryCorrectThreshold} = wait until fully mastered.");
         }
     }
 }
