@@ -1,40 +1,40 @@
 # Hiragana Trainer
 
-Plugin [Dalamud](https://dalamud.dev/) para FFXIV: um treinador de
-hiragana/katakana com repetição espaçada (SRS, sistema Leitner), inspirado no
-app Hiragana Pro.
+A [Dalamud](https://dalamud.dev/) plugin for FFXIV: a hiragana/katakana
+trainer using spaced repetition (SRS, Leitner system), inspired by the
+Hiragana Pro app.
 
-**Status: em desenvolvimento — ainda não é instalável.**
+**Status: in development — not yet installable.**
 
-## O que faz
+## What it does
 
-- Treina hiragana e katakana base (sem dakuten/handakuten/combinações).
-- Repetição espaçada por caixas Leitner, agendada por sessão de treino (não
-  por relógio).
-- Dispara via comando manual (`/kana`) ou automaticamente em loading screens
-  e "duty pop", com cooldown configurável.
-- Progresso e estatísticas (acertos/erros por kana, streak) salvos por
-  personagem.
+- Trains base hiragana and katakana (no dakuten/handakuten/combinations).
+- Spaced repetition via Leitner boxes, scheduled per training session
+  (not by wall-clock time).
+- Triggers via manual command (`/kana`) or automatically on loading screens
+  and duty pop, with a configurable cooldown.
+- Progress and stats (correct/incorrect per kana, streak) saved per
+  character.
 
-## Build local
+## Building locally
 
-Requisitos: .NET SDK 10+, [XIVLauncher/Dalamud](https://github.com/goatcorp/FFXIVQuickLauncher)
-instalado.
+Requirements: .NET SDK 10+, [XIVLauncher/Dalamud](https://github.com/goatcorp/FFXIVQuickLauncher)
+installed.
 
 ```bash
 dotnet build
 ```
 
-Para testar no jogo, aponte a pasta de build do projeto `HiraganaTrainer`
-para a pasta `devPlugins` do XIVLauncher (ou configure "Dev Plugin Location"
-nas configurações do Dalamud).
+To test in-game, point the `HiraganaTrainer` project's build output at the
+XIVLauncher `devPlugins` folder (or set a "Dev Plugin Location" in the
+Dalamud settings).
 
-## Testes
+## Tests
 
 ```bash
 dotnet test
 ```
 
-## Licença
+## License
 
-MIT — veja [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE).

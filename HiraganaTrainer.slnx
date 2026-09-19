@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="HiraganaTrainer.Core/HiraganaTrainer.Core.csproj" />
+  <Project Path="HiraganaTrainer.Core.Tests/HiraganaTrainer.Core.Tests.csproj" />
+  <Project Path="HiraganaTrainer/HiraganaTrainer.csproj">
+    <Platform Project="x64" />
+  </Project>
+</Solution>

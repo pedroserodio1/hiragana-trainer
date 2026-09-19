@@ -1,0 +1,19 @@
+<Project Sdk="Dalamud.NET.Sdk/15.0.0">
+  <PropertyGroup>
+    <Version>0.0.1.0</Version>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- Manifest fields: https://github.com/goatcorp/DalamudPackager/blob/827d88dc/DalamudPackager/DalamudPackager.cs#L420 -->
+    <Author>Pedro Serodio</Author>
+    <Name>Hiragana Trainer</Name>
+    <InternalName>HiraganaTrainer</InternalName>
+    <Punchline>Train hiragana and katakana with spaced repetition, without leaving the game.</Punchline>
+    <Description>A hiragana/katakana trainer using SRS (Leitner). Open it with /kana or let
+the plugin remind you during loading screens and duty pops, with a configurable cooldown.</Description>
+    <Tags>japanese;learning;kana;srs</Tags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HiraganaTrainer.Core\HiraganaTrainer.Core.csproj" />
+  </ItemGroup>
+</Project>
