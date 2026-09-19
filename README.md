@@ -8,11 +8,16 @@ Hiragana Pro app.
 
 ## What it does
 
-- Trains base hiragana and katakana (no dakuten/handakuten/combinations).
+- Trains base hiragana and katakana (no dakuten/handakuten/combinations),
+  one script at a time so they're never mixed in the same session.
+- New kana are introduced one at a time — taught first, then quizzed —
+  with a configurable pace before the next one unlocks.
 - Spaced repetition via Leitner boxes, scheduled per training session
-  (not by wall-clock time).
-- Triggers via manual command (`/kana`) or automatically on loading screens
-  and duty pop, with a configurable cooldown.
+  (not by wall-clock time); a kana graduates out of review after enough
+  correct answers, shown as a star progress row.
+- Triggers via manual command (`/kana`) or automatically while queuing for
+  a duty, with a configurable cooldown — closes itself the moment a duty
+  is found so it never blocks the confirm dialog.
 - Progress and stats (correct/incorrect per kana, streak) saved per
   character.
 
