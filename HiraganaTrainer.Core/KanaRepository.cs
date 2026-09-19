@@ -7,6 +7,10 @@ public static class KanaRepository
 {
     private const string ResourceName = "HiraganaTrainer.Core.Data.kana.json";
 
+    /// <summary>Gojuon row unlock order, used to introduce kana in small groups instead of all at once.</summary>
+    public static readonly IReadOnlyList<string> RowOrder =
+        ["a", "k", "s", "t", "n", "h", "m", "y", "r", "w", "single"];
+
     public static readonly IReadOnlyList<Kana> All = Load();
 
     private static IReadOnlyList<Kana> Load()

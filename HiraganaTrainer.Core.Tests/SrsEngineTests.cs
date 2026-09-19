@@ -6,6 +6,7 @@ namespace HiraganaTrainer.Core.Tests;
 public class SrsEngineTests
 {
     private static readonly Kana A = new("あ", "a", KanaType.Hiragana, "a", "a");
+    private static readonly Kana I = new("い", "i", KanaType.Hiragana, "a", "i");
     private static readonly Kana Ka = new("か", "ka", KanaType.Hiragana, "k", "a");
     private static readonly Kana Ki = new("き", "ki", KanaType.Hiragana, "k", "i");
     private static readonly Kana Sa = new("さ", "sa", KanaType.Hiragana, "s", "a");
@@ -73,15 +74,104 @@ public class SrsEngineTests
     }
 
     [Fact]
+    public void SelectNextCard_NeverSeenKana_ReturnsTeachPresentation()
+    {
+        var progress = new CharacterProgress();
+
+        var next = SrsEngine.SelectNextCard(progress, new[] { A }, KanaType.Hiragana, new Random(1));
+
+        Assert.Equal(A, next.Kana);
+        Assert.Equal(CardPresentation.Teach, next.Presentation);
+    }
+
+    [Fact]
+    public void RecordTeach_MarksCardSeen_SoNextSelectionIsAQuiz()
+    {
+        var progress = new CharacterProgress();
+        SrsEngine.RecordTeach(progress, A.Character);
+
+        var next = SrsEngine.SelectNextCard(progress, new[] { A }, KanaType.Hiragana, new Random(1));
+
+        Assert.Equal(CardPresentation.Quiz, next.Presentation);
+    }
+
+    [Fact]
     public void SelectNextCard_PrefersEligibleCardsOverNonEligible()
     {
         var progress = new CharacterProgress();
-        SrsEngine.RecordAnswer(progress, A.Character, correct: true); // box 2, not eligible for a while
-        var pool = new[] { A, Ka };
+        SrsEngine.RecordTeach(progress, A.Character);
+        SrsEngine.RecordTeach(progress, I.Character);
+        SrsEngine.RecordAnswer(progress, A.Character, correct: true); // -> box 2, interval 2 turns
 
-        var picked = SrsEngine.SelectNextCard(progress, pool, new Random(1));
+        SrsEngine.StartNewTurn(progress); // turn 1: I (box 1) is eligible again, A (box 2) is not
 
-        Assert.Equal(Ka, picked);
+        var next = SrsEngine.SelectNextCard(progress, new[] { A, I }, KanaType.Hiragana, new Random(1));
+
+        Assert.Equal(I, next.Kana);
+        Assert.Equal(CardPresentation.Quiz, next.Presentation);
+    }
+
+    [Fact]
+    public void SelectNextCard_FavorsCardsWithMoreMistakes_WhenBothEligible()
+    {
+        var progress = new CharacterProgress();
+        SrsEngine.RecordTeach(progress, A.Character);
+        SrsEngine.RecordTeach(progress, I.Character);
+        for (var i = 0; i < 8; i++)
+            SrsEngine.RecordAnswer(progress, A.Character, correct: false); // stays box 1, incorrectCount 8
+
+        var pool = new[] { A, I };
+        var random = new Random(42);
+        var pickedA = 0;
+
+        for (var i = 0; i < 200; i++)
+        {
+            SrsEngine.StartNewTurn(progress);
+            if (SrsEngine.SelectNextCard(progress, pool, KanaType.Hiragana, random).Kana == A)
+                pickedA++;
+        }
+
+        Assert.True(pickedA > 120, $"Expected the frequently-missed kana to be picked clearly more than half the time, got {pickedA}/200.");
+    }
+
+    [Fact]
+    public void GetUnlockedPool_OnlyIncludesRowsWithinUnlockCount()
+    {
+        var progress = new CharacterProgress(); // defaults to 1 unlocked row ("a")
+
+        var pool = SrsEngine.GetUnlockedPool(progress, new[] { A, I, Ka }, KanaType.Hiragana);
+
+        Assert.Equal(new[] { A, I }, pool);
+    }
+
+    [Fact]
+    public void MaybeUnlockNextGroup_UnlocksNextRow_WhenCurrentGroupIsMastered()
+    {
+        var progress = new CharacterProgress();
+        var allKana = new[] { A, I, Ka };
+        SrsEngine.RecordTeach(progress, A.Character);
+        SrsEngine.RecordTeach(progress, I.Character);
+        SrsEngine.RecordAnswer(progress, A.Character, correct: true); // box 2
+        SrsEngine.RecordAnswer(progress, I.Character, correct: true); // box 2
+
+        SrsEngine.MaybeUnlockNextGroup(progress, allKana, KanaType.Hiragana);
+
+        Assert.Equal(2, progress.GetUnlockedGroups(KanaType.Hiragana));
+    }
+
+    [Fact]
+    public void MaybeUnlockNextGroup_StaysLocked_WhenCurrentGroupIsNotMastered()
+    {
+        var progress = new CharacterProgress();
+        var allKana = new[] { A, I, Ka };
+        SrsEngine.RecordTeach(progress, A.Character);
+        SrsEngine.RecordTeach(progress, I.Character);
+        SrsEngine.RecordAnswer(progress, A.Character, correct: true); // box 2
+        // I stays at box 1, not mastered yet
+
+        SrsEngine.MaybeUnlockNextGroup(progress, allKana, KanaType.Hiragana);
+
+        Assert.Equal(1, progress.GetUnlockedGroups(KanaType.Hiragana));
     }
 
     [Fact]
